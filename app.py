@@ -5,15 +5,21 @@ from flask_debugtoolbar import DebugToolbarExtension
 from models import db, connect_db, User
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql:///blogly'
+app.debug = True
+app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:12345@localhost:5432/blogly'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'helpmeiampanicking'
 app.config['SQLALCHEMY_ECHO'] = True
 
 toolbar = DebugToolbarExtension(app)
+with app.app_context():
+  connect_db(app)
+  db.create_all()
 
-connect_db(app)
-db.create_all()
+DEFAULT_IMAGE_URL ="https://clipart-library.com/new_gallery/236-2365757_waluigi-sticker-waluigi-face-transparent.png"
+
+# this is a good default image
 
 @app.route('/')
 def root():
@@ -21,27 +27,26 @@ def root():
 
 @app.route('/users')
 def index():
-    """Show a page with info on all users"""
 
     users = User.query.order_by(User.last_name, User.first_name).all()
     return render_template('users/index.html', users=users)
 
 
 @app.route('/users/new', methods=["GET"])
-def create_new_user_form():
-    """Show a form to create a new user"""
+def new_user_form():
+    """new user creation form"""
 
     return render_template('users/new.html')
 
 
 @app.route("/users/new", methods=["POST"])
 def users_new():
-    """Handle form submission for creating a new user"""
+    """Handle form submission"""
 
     new_user = User(
         first_name=request.form['first_name'],
         last_name=request.form['last_name'],
-        image_url=request.form['image_url'] or None)
+        image_url=request.form['image_url'] or DEFAULT_IMAGE_URL)
 
     db.session.add(new_user)
     db.session.commit()
@@ -51,7 +56,7 @@ def users_new():
 
 @app.route('/users/<int:user_id>')
 def users_show(user_id):
-    """Show a page with info on a specific user"""
+    """Show user page"""
 
     user = User.query.get_or_404(user_id)
     return render_template('users/show.html', user=user)
@@ -59,7 +64,7 @@ def users_show(user_id):
 
 @app.route('/users/<int:user_id>/edit')
 def users_edit(user_id):
-    """Show a form to edit an existing user"""
+    """edit user"""
 
     user = User.query.get_or_404(user_id)
     return render_template('users/edit.html', user=user)
@@ -67,7 +72,7 @@ def users_edit(user_id):
 
 @app.route('/users/<int:user_id>/edit', methods=["POST"])
 def users_update(user_id):
-    """Handle form submission for updating an existing user"""
+    """Add user"""
 
     user = User.query.get_or_404(user_id)
     user.first_name = request.form['first_name']
@@ -81,8 +86,8 @@ def users_update(user_id):
 
 
 @app.route('/users/<int:user_id>/delete', methods=["POST"])
-def users_destroy(user_id):
-    """Handle form submission for deleting an existing user"""
+def users_delete(user_id):
+    """Delete selected user"""
 
     user = User.query.get_or_404(user_id)
     db.session.delete(user)

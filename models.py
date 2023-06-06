@@ -2,8 +2,6 @@ from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
 
-DEFAULT_IMAGE_URL ="/waluigi.png"
-
 """Models for Blogly."""
 
 class User(db.Model):
